@@ -16,7 +16,7 @@ func main() {
 	t := fortune.NewTriangulator(vertices)
 	t.Triangulate()
 
-	if !true {
+	if true {
 		g := gographviz.NewGraph()
 
 		gName := "G"

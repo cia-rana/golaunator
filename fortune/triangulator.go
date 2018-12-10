@@ -1,7 +1,7 @@
 package fortune
 
 import (
-	"fmt"
+	. "fmt"
 	"math"
 )
 
@@ -43,7 +43,7 @@ func (t *Triangulator) Triangulate() error {
 		event := t.eventQueue.Pull()
 
 		t.ly = event.Point.Y
-		fmt.Println(event, t.ly)
+		Println("event:", event, t.ly)
 
 		switch event.Type {
 		case Site:
@@ -51,7 +51,7 @@ func (t *Triangulator) Triangulate() error {
 		case Circle:
 			t.removeParabola(event)
 		default:
-			// Do nothing!
+			panic("")
 		}
 	}
 
@@ -68,13 +68,13 @@ func (t *Triangulator) insertParabola(event *Event) {
 
 	if t.parRoot.IsLeaf() && event.Point.Y-t.parRoot.Point.Y < math.SmallestNonzeroFloat64 {
 		rp := t.parRoot.Point
-		t.parRoot.SetRightChild(NewParabolaWithPoint(point))
+		t.parRoot.SetNext(NewParabolaWithPoint(point))
 		t.Edges = append(t.Edges, NewEdge(Vector2Vertex(point), Vector2Vertex(rp)))
 		return
 	}
 
 	par := t.parRoot.GetParabolaByX(point)
-	fmt.Println(par.Point, point)
+	Println("GetParabolaByX:", par.Point, point)
 
 	edge := NewEdge(Vector2Vertex(par.Point), Vector2Vertex(point))
 
@@ -84,8 +84,8 @@ func (t *Triangulator) insertParabola(event *Event) {
 	parB := NewParabolaWithPoint(point)
 	parC := NewParabolaWithPoint(par.Point)
 
-	parA.SefRightChild(parB)
-	parB.SetRightChild(parC)
+	parA.SetNext(parB)
+	parB.SetNext(parC)
 
 	t.CheckCircle(parA)
 	t.CheckCircle(parC)
@@ -93,46 +93,15 @@ func (t *Triangulator) insertParabola(event *Event) {
 
 func (t *Triangulator) removeParabola(event *Event) {
 	parB := event.Parabola
+	parA := parB.GetPrev()
+	parC := parB.GetNext()
 
-	xl := parB.GetLeftParent()
-	xr := parB.GetRightParent()
-
-	parA := xl.GetLeftLeaf()
-	parC := xr.GetRightLeaf()
-
-	if parA == parC {
-		panic("")
-		return
+	if parRootIsChanged, parRootCandidate := parB.Delete(); parRootIsChanged {
+		t.parRoot = parRootCandidate
 	}
-
-	gparent := parB.GetParent()
-	ggparent := gparent.GetParent()
-	if gparent.GetLeftChild() == parB {
-		if ggparent.GetLeftChild() == gparent {
-			ggparent.SetLeftChild(gparent.GetRightChild())
-		}
-		if ggparent.GetRightChild() == gparent {
-			ggparent.SetRightChild(gparent.GetRightChild())
-		}
-	} else {
-		if ggparent.GetLeftChild() == gparent {
-			ggparent.SetLeftChild(gparent.GetLeftChild())
-		}
-		if ggparent.GetRightChild() == gparent {
-			ggparent.SetRightChild(gparent.GetLeftChild())
-		}
-	}
-
-	a, b, c := parA.Point, parB.Point, parC.Point
-	x, y := calcCircleCenter(a, b, c)
-	dx, dy := b.X-x, b.Y-y
-	d := math.Sqrt(dx*dx + dy*dy)
-	fmt.Println(a, b, c, y+d)
 
 	t.CheckCircle(parA)
 	t.CheckCircle(parC)
-
-	return
 }
 
 func (t *Triangulator) CheckCircle(par *Parabola) {
@@ -140,46 +109,40 @@ func (t *Triangulator) CheckCircle(par *Parabola) {
 	parB := par
 	parC := par.GetNext()
 	if parA == nil || parC == nil {
+		Println("par:", parA, parB, parC)
 		return
 	}
 
 	a := parA.Point
-	b := par.Point
+	b := parB.Point
 	c := parC.Point
 	if a == c {
+		Println("point:", a, b, c)
 		return
 	}
 
 	ax := a.X - b.X
 	ay := a.Y - b.Y
 	cx := c.X - b.X
-	xy := c.Y - b.Y
+	cy := c.Y - b.Y
 
 	d := 2 * (ax*cy - ay*cx)
 	if d >= -2*math.SmallestNonzeroFloat64 { // <=> ay * cx - ax * cy <= e^-12
+		Println("d", d)
 		return
 	}
 
-	/*
-		x, y := calcCircleCenter(a, b, c)
+	ha := ax*ax + ay*ay
+	hc := cx*cx + cy*cy
+	x := (cy*ha - ay*hc) / d
+	y := (ax*hc - cx*ha) / d
 
-		dx := b.X - x
-		dy := b.Y - y
-		d := math.Sqrt(dx*dx + dy*dy)
-
-		event := &Event{Type: Circle, Point: &Vector{X: x, Y: y + d}}
-		event.Arch = par
-		t.eventQueue.Push(event)
-	*/
-}
-
-func calcCircleCenter(a, b, c *Vector) (float64, float64) {
-	pbABx := -(a.Y - b.Y) / (a.X - b.X)
-	pbABy := (a.X + a.Y + b.X + b.Y) / 2
-	pbBCx := -(b.Y - c.Y) / (b.X - c.X)
-
-	x := -(a.X + a.Y - (c.X + c.Y)) / (pbABx - pbBCx)
-	y := pbABx*x + pbABy
-
-	return x, y
+	t.eventQueue.Push(&Event{
+		Type: Circle,
+		Point: &Vector{
+			X: x + b.X,
+			Y: y + b.Y + math.Sqrt(x*x+y*y),
+		},
+		Parabola: par,
+	})
 }

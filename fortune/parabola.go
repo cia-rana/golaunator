@@ -4,7 +4,7 @@ import (
 	"math"
 )
 
-const (
+var (
 	posiInf = math.Inf(1)
 	negaInf = -posiInf
 )
@@ -32,7 +32,11 @@ func (p Parabola) GetRightChild() *Parabola {
 	return p.r
 }
 
-func (p *Parabola) SetLeftChild(par *Parabola) {
+func (p *Parabola) GetParent() *Parabola {
+	return p.p
+}
+
+func (p *Parabola) SetPrev(par *Parabola) {
 	if p.l == nil {
 		p.l = par
 		par.p = p
@@ -47,7 +51,7 @@ func (p *Parabola) SetLeftChild(par *Parabola) {
 	par.p = p
 }
 
-func (p *Parabola) SetRightChild(par *Parabola) {
+func (p *Parabola) SetNext(par *Parabola) {
 	if p.r == nil {
 		p.r = par
 		par.p = p
@@ -62,11 +66,23 @@ func (p *Parabola) SetRightChild(par *Parabola) {
 	par.p = p
 }
 
-func (p *Parabola) GetParent() *Parabola {
-	return p.p
+func (p *Parabola) GetPrev() *Parabola {
+	if p.l != nil {
+		p = p.l
+		for p.r != nil {
+			p = p.r
+		}
+		return p
+	}
+
+	pp := p.p
+	for pp != nil && p == pp.l {
+		p, pp = pp, pp.p
+	}
+	return pp
 }
 
-func (p *Parabola) GetPrev() *Parabola {
+func (p *Parabola) GetNext() *Parabola {
 	if p.r != nil {
 		p = p.r
 		for p.l != nil {
@@ -82,20 +98,47 @@ func (p *Parabola) GetPrev() *Parabola {
 	return pp
 }
 
-func (p *Parabola) GetNext() *Parabola {
-	if p.l != nil {
-		p = p.l
-		for p.r != nil {
-			p = p.r
-		}
-		return p
+func (p *Parabola) GetMin() *Parabola {
+	for par := p; par != nil; par = par.GetLeftChild() {
+		p = par
+	}
+	return p
+}
+
+func (p *Parabola) GetMax() *Parabola {
+	for par := p; par != nil; par = par.GetRightChild() {
+		p = par
+	}
+	return p
+}
+
+func (p *Parabola) Delete() (bool, *Parabola) {
+	if p.l == nil {
+		return p.Replace(p.r)
+	} else if p.r == nil {
+		return p.Replace(p.l)
+	}
+	pPrev := p.GetPrev()
+	return pPrev.Replace(pPrev.l)
+}
+
+func (p *Parabola) Replace(pChild *Parabola) (bool, *Parabola) {
+	if !((p.l == pChild && p.r == nil) || (p.r == pChild && p.l == nil)) {
+		return false, nil
 	}
 
-	pp := p.p
-	for pp != nil && p == pp.l {
-		p.pp = pp.pp.p
+	if pChild != nil {
+		pChild.p = p.p
 	}
-	return pp
+
+	if p.p == nil {
+		return true, pChild
+	} else if p.p.l == p {
+		p.p.l = p.l
+	} else {
+		p.p.r = p.r
+	}
+	return false, nil
 }
 
 func (p Parabola) IsLeaf() bool {
@@ -154,15 +197,14 @@ func (p Parabola) GetRightBreakPoint(ly float64) float64 {
 
 	point := p.Point
 	if point.Y == ly {
-		return pointX
+		return point.X
 	}
 	return posiInf
 }
 
-func (p Parabola) GetY(ly, x float64) float64 {
-	dp := 2.0 * (p.Point.Y - ly)
-	a := 1.0 / dp
-	b := -2.0 * p.Point.X / dp
-	c := ly + dp/4.0 + p.Point.X*p.Point.X/dp
-	return a*x*x + b*x + c
+func (p *Parabola) Len() int {
+	if p == nil {
+		return 0
+	}
+	return 1 + p.l.Len() + p.r.Len()
 }

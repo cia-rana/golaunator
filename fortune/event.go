@@ -3,7 +3,8 @@ package fortune
 type EventType int
 
 const (
-	Site EventType = iota
+	_ EventType = iota
+	Site
 	Circle
 )
 
