@@ -99,44 +99,58 @@ func (p *Parabola) GetNext() *Parabola {
 }
 
 func (p *Parabola) GetMin() *Parabola {
-	for par := p; par != nil; par = par.GetLeftChild() {
+	for par := p; par != nil; par = par.l {
 		p = par
 	}
 	return p
 }
 
 func (p *Parabola) GetMax() *Parabola {
-	for par := p; par != nil; par = par.GetRightChild() {
+	for par := p; par != nil; par = par.r {
 		p = par
 	}
 	return p
 }
 
 func (p *Parabola) Delete() (bool, *Parabola) {
-	if p.l == nil {
-		return p.Replace(p.r)
+	if p.l == nil && p.r == nil {
+		return p.RecognizeParent(nil)
+	} else if p.l == nil {
+		p.r.p = p.p
+		return p.RecognizeParent(p.r)
 	} else if p.r == nil {
-		return p.Replace(p.l)
+		p.l.p = p.p
+		return p.RecognizeParent(p.l)
 	}
-	pPrev := p.GetPrev()
-	return pPrev.Replace(pPrev.l)
+
+	pRMin := p.r.GetMin()
+
+	if pRMin.r != nil {
+		pRMin.r.p = pRMin.p
+		if pRMin.p.l == pRMin {
+			pRMin.p.l = pRMin.r
+		} else {
+			pRMin.p.r = pRMin.r
+		}
+	}
+
+	if pRMin != p.r {
+		p.r.p = pRMin
+		pRMin.r = p.r
+	}
+	p.l.p = pRMin
+	pRMin.l = p.l
+	pRMin.p = p.p
+	return p.RecognizeParent(pRMin)
 }
 
-func (p *Parabola) Replace(pChild *Parabola) (bool, *Parabola) {
-	if !((p.l == pChild && p.r == nil) || (p.r == pChild && p.l == nil)) {
-		return false, nil
-	}
-
-	if pChild != nil {
-		pChild.p = p.p
-	}
-
+func (p *Parabola) RecognizeParent(q *Parabola) (bool, *Parabola) {
 	if p.p == nil {
-		return true, pChild
+		return true, q
 	} else if p.p.l == p {
-		p.p.l = p.l
+		p.p.l = q
 	} else {
-		p.p.r = p.r
+		p.p.r = q
 	}
 	return false, nil
 }

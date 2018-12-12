@@ -1,7 +1,6 @@
 package fortune
 
 import (
-	"log"
 	"sort"
 	"testing"
 )
@@ -26,8 +25,6 @@ func TestParabolaInOrder(t *testing.T) {
 	for _, point := range points {
 		parRoot.set(NewParabolaWithPoint(point))
 	}
-
-	log.Printf("Len: %d", parRoot.Len())
 
 	// Test for Parabola.Next
 	par = parRoot.GetMin()
@@ -63,11 +60,15 @@ func TestParabolaDelete(t *testing.T) {
 		parRoot.set(NewParabolaWithPoint(point))
 	}
 
-	if parRootIsChanged, parRootCandidate := parRoot.Delete(); parRootIsChanged {
+	if parRootIsChanged, parRootCandidate := parRoot.GetLeftChild().Delete(); parRootIsChanged {
 		parRoot = parRootCandidate
 	}
+
+	expected = []float64{0, 1, 3, 4, 5, 6, 7, 8, 9}
+	if l := parRoot.Len(); l != len(expected) {
+		t.Fatalf("parRoot.Len(): %d, len(expected): %d\n", l, len(expected))
+	}
 	par = parRoot.GetMin()
-	expected = []float64{0, 1, 2, 3, 4, 5, 7, 8, 9}
 	for i, e := range expected {
 		if par == nil {
 			t.Fatalf("%d\n", i)
