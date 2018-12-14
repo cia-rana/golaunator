@@ -160,18 +160,21 @@ func (p Parabola) IsLeaf() bool {
 }
 
 func (p *Parabola) GetParabolaByX(point *Vector) *Parabola {
-	par := p
-	for !par.IsLeaf() {
-		if par.GetLeftBreakPoint(point.Y)-point.X > 0 {
-			par = par.GetLeftChild()
-		} else if point.X-par.GetRightBreakPoint(point.X) > 0 {
-			par = par.GetRightChild()
+	for !p.IsLeaf() {
+		if dxl := p.GetLeftBreakPoint(point.Y) - point.X; dxl > 0 {
+			p = p.GetLeftChild()
+		} else if dxr := point.X - p.GetRightBreakPoint(point.X); dxr > 0 {
+			if pr := p.GetRightChild(); pr == nil {
+				break
+			} else {
+				p = pr
+			}
 		} else {
 			break
 		}
 	}
 
-	return par
+	return p
 }
 
 func (p Parabola) GetLeftBreakPoint(ly float64) float64 {

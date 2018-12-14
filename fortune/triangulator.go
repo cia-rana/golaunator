@@ -1,7 +1,6 @@
 package fortune
 
 import (
-	. "fmt"
 	"math"
 )
 
@@ -43,7 +42,6 @@ func (t *Triangulator) Triangulate() error {
 		event := t.eventQueue.Pull()
 
 		t.ly = event.Point.Y
-		Println("event:", event, t.ly)
 
 		switch event.Type {
 		case Site:
@@ -74,7 +72,6 @@ func (t *Triangulator) insertParabola(event *Event) {
 	}
 
 	par := t.parRoot.GetParabolaByX(point)
-	Println("GetParabolaByX:", par.Point, point)
 
 	edge := NewEdge(Vector2Vertex(par.Point), Vector2Vertex(point))
 
@@ -96,6 +93,10 @@ func (t *Triangulator) removeParabola(event *Event) {
 	parA := parB.GetPrev()
 	parC := parB.GetNext()
 
+	edge := NewEdge(Vector2Vertex(parA.Point), Vector2Vertex(parC.Point))
+
+	t.Edges = append(t.Edges, edge)
+
 	if parRootIsChanged, parRootCandidate := parB.Delete(); parRootIsChanged {
 		t.parRoot = parRootCandidate
 	}
@@ -109,7 +110,6 @@ func (t *Triangulator) CheckCircle(par *Parabola) {
 	parB := par
 	parC := par.GetNext()
 	if parA == nil || parC == nil {
-		Println("par:", parA, parB, parC)
 		return
 	}
 
@@ -117,7 +117,6 @@ func (t *Triangulator) CheckCircle(par *Parabola) {
 	b := parB.Point
 	c := parC.Point
 	if a == c {
-		Println("point:", a, b, c)
 		return
 	}
 
@@ -127,8 +126,15 @@ func (t *Triangulator) CheckCircle(par *Parabola) {
 	cy := c.Y - b.Y
 
 	d := 2 * (ax*cy - ay*cx)
-	if d >= -2*math.SmallestNonzeroFloat64 { // <=> ay * cx - ax * cy <= e^-12
-		Println("d", d)
+	//   ABxBC <= e-12
+	// <=>
+	//   (b.X - a.X) * (c.Y - b.Y) - (b.Y - a.Y) * (c.X - b.X)
+	// = (-ax)*cy - (-ay)*cx
+	// = -ax*cy + ay*cx <= e^-12
+	// <=>
+	//   2*(ax*cy - ay*cx) >= -2e^-12
+	// <=>
+	if d >= -2*math.SmallestNonzeroFloat64 {
 		return
 	}
 
