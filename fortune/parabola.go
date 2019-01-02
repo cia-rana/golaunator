@@ -12,8 +12,6 @@ var (
 type Parabola struct {
 	Point   *Vector   // Forcus point of this
 	l, r, p *Parabola // Left, Right, Parent Parabola-Node
-
-	Edge *Edge
 }
 
 func NewParabola() *Parabola {
