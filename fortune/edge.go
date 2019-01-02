@@ -3,8 +3,6 @@ package fortune
 type Edge struct {
 	Start *Vertex
 	End   *Vertex
-
-	neightbour *Edge
 }
 
 func NewEdge(start, end *Vertex) *Edge {

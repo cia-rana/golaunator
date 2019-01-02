@@ -4,7 +4,7 @@ import "math/rand"
 
 const (
 	vertexDomainMax = 1000
-	verticesNum     = 500
+	verticesNum     = 100
 )
 
 var vertices = [][]float64{}

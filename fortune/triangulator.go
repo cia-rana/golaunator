@@ -194,12 +194,17 @@ func (t *Triangulator) draw(point *Vector) {
 			t.dc.SetHexColor("f00")
 			bpl := p.GetLeftBreakPoint(point.Y)
 			bpr := p.GetRightBreakPoint(point.Y)
-			DrawParabola(t.dc, p.Point.X, p.Point.Y, point.Y, math.Max(bpl, 0), math.Min(bpr, float64(t.dc.Width())))
+			DrawParabola(t.dc, p.Point.X, p.Point.Y, point.Y, math.Max(bpl, 0), Clamp(0, float64(t.dc.Width()), bpr))
 			t.dc.DrawString(fmt.Sprintf("%dL", i), bpl-10, p.Point.Y+10*float64(i))
 			t.dc.DrawString(fmt.Sprintf("%dR", i), bpr+10, p.Point.Y+10*float64(i))
 			t.dc.Stroke()
 			i++
 		}
+	}
+
+	t.dc.SetHexColor("00f")
+	for _, e := range t.Edges {
+		t.dc.DrawLine(e.Start.X, e.Start.Y, e.End.X, e.End.Y)
 	}
 
 	t.dc.SetHexColor("00f")

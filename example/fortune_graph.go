@@ -13,7 +13,7 @@ func main() {
 	}
 
 	t := fortune.NewTriangulator(verticesForFortune)
-	//t.EnableDraw()
+	t.EnableDraw()
 	t.Triangulate()
 
 	if true {
