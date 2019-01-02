@@ -16,7 +16,6 @@ type Event struct {
 
 type EventQueue struct {
 	data []*Event
-	Max  *Event
 }
 
 func NewEventQueue() *EventQueue {
@@ -30,14 +29,10 @@ func (eq *EventQueue) Push(e *Event) {
 		return
 	}
 
-	if eq.Max == nil || e.Point.Y > eq.Max.Point.Y {
-		eq.Max = e
-	}
-
 	eq.data = append(eq.data, e)
 	for i := len(eq.data) - 1; i > 1; {
 		parentI := i / 2
-		if eq.data[i].Point.Y < eq.data[parentI].Point.Y || eq.data[i].Point.Y == eq.data[parentI].Point.Y && eq.data[i].Point.X < eq.data[i].Point.X {
+		if eq.data[i].Point.Y < eq.data[parentI].Point.Y || eq.data[i].Point.Y == eq.data[parentI].Point.Y && eq.data[i].Point.X < eq.data[parentI].Point.X {
 			eq.data[i], eq.data[parentI] = eq.data[parentI], eq.data[i]
 			i = parentI
 		} else {
@@ -68,10 +63,6 @@ func (eq *EventQueue) Pull() *Event {
 		} else {
 			break
 		}
-	}
-
-	if eq.Empty() {
-		eq.Max = nil
 	}
 
 	return result
