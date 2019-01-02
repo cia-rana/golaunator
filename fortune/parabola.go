@@ -85,9 +85,6 @@ func (p *Parabola) GetPrev() *Parabola {
 func (p *Parabola) GetNext() *Parabola {
 	if p.r != nil {
 		par := p.r
-		if par.l != nil && par.l.l != nil && par.l.l.l != nil {
-			//fmt.Println(par.Point.Index, par.l.Point.Index, par.l.l.Point.Index, par.l.l.l.Point.Index)
-		}
 		for par.l != nil {
 			par = par.l
 		}
