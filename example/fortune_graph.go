@@ -7,13 +7,13 @@ import (
 )
 
 func main() {
-	vertices := []*fortune.Vertex{
-		{X: 0, Y: 0},
-		{X: 100, Y: 500},
-		{X: 500, Y: 0},
-		{X: 125, Y: 125},
+	verticesForFortune := make([]*fortune.Vertex, 0, len(vertices))
+	for _, v := range vertices {
+		verticesForFortune = append(verticesForFortune, &fortune.Vertex{X: v[0], Y: v[1]})
 	}
-	t := fortune.NewTriangulator(vertices)
+
+	t := fortune.NewTriangulator(verticesForFortune)
+	//t.EnableDraw()
 	t.Triangulate()
 
 	if true {
@@ -23,7 +23,7 @@ func main() {
 		g.SetName(gName)
 		g.AddAttr(gName, "splines", "line")
 
-		for i, v := range vertices {
+		for i, v := range verticesForFortune {
 			g.AddNode(
 				gName,
 				fmt.Sprint(i),

@@ -1,7 +1,10 @@
 package fortune
 
 import (
+	"fmt"
 	"math"
+
+	"github.com/fogleman/gg"
 )
 
 type Triangulator struct {
@@ -12,7 +15,9 @@ type Triangulator struct {
 
 	eventQueue *EventQueue
 
-	ly float64 // Current y position of the sweep line on plain
+	dc           *gg.Context
+	enableDraw   bool
+	drawingCount int
 }
 
 func NewTriangulator(vertices []*Vertex) *Triangulator {
@@ -41,15 +46,13 @@ func (t *Triangulator) Triangulate() error {
 	for !t.eventQueue.Empty() {
 		event := t.eventQueue.Pull()
 
-		t.ly = event.Point.Y
-
 		switch event.Type {
 		case Site:
 			t.insertParabola(event)
 		case Circle:
 			t.removeParabola(event)
 		default:
-			panic("")
+			panic(fmt.Sprintf("undifined type: %v", event.Type))
 		}
 	}
 
@@ -73,16 +76,23 @@ func (t *Triangulator) insertParabola(event *Event) {
 
 	par := t.parRoot.GetParabolaByX(point)
 
-	edge := NewEdge(Vector2Vertex(par.Point), Vector2Vertex(point))
+	t.Edges = append(t.Edges, NewEdge(Vector2Vertex(par.Point), Vector2Vertex(point)))
 
-	t.Edges = append(t.Edges, edge)
-
-	parA := par
+	parA := NewParabolaWithPoint(par.Point)
 	parB := NewParabolaWithPoint(point)
 	parC := NewParabolaWithPoint(par.Point)
 
-	parA.SetNext(parB)
+	par.SetNext(parB)
+	parB.SetPrev(parA)
 	parB.SetNext(parC)
+
+	if parRootIsChanged, parRootCandidate := par.Delete(); parRootIsChanged {
+		t.parRoot = parRootCandidate
+	}
+
+	if t.enableDraw {
+		t.draw(point)
+	}
 
 	t.CheckCircle(parA)
 	t.CheckCircle(parC)
@@ -90,15 +100,22 @@ func (t *Triangulator) insertParabola(event *Event) {
 
 func (t *Triangulator) removeParabola(event *Event) {
 	parB := event.Parabola
+
+	if !t.parRoot.IsExist(parB) {
+		return
+	}
+
 	parA := parB.GetPrev()
 	parC := parB.GetNext()
 
-	edge := NewEdge(Vector2Vertex(parA.Point), Vector2Vertex(parC.Point))
-
-	t.Edges = append(t.Edges, edge)
+	t.Edges = append(t.Edges, NewEdge(Vector2Vertex(parA.Point), Vector2Vertex(parC.Point)))
 
 	if parRootIsChanged, parRootCandidate := parB.Delete(); parRootIsChanged {
 		t.parRoot = parRootCandidate
+	}
+
+	if t.enableDraw {
+		t.draw(event.Point)
 	}
 
 	t.CheckCircle(parA)
@@ -151,4 +168,64 @@ func (t *Triangulator) CheckCircle(par *Parabola) {
 		},
 		Parabola: par,
 	})
+}
+
+func (t *Triangulator) EnableDraw() {
+	if t.dc == nil {
+		t.dc = gg.NewContext(1000, 1000)
+		t.dc.SetHexColor("fff")
+		t.dc.Clear()
+		t.drawingCount = 0
+	}
+	t.enableDraw = true
+}
+
+func (t *Triangulator) DisenableDraw() {
+	t.enableDraw = false
+}
+
+func (t *Triangulator) draw(point *Vector) {
+
+	t.dc.SetHexColor("000")
+	t.dc.DrawString(fmt.Sprintf("%d", t.drawingCount), 20, 20)
+	{
+		var i int
+		for p := t.parRoot.GetMin(); p != nil; p = p.GetNext() {
+			t.dc.SetHexColor("f00")
+			bpl := p.GetLeftBreakPoint(point.Y)
+			bpr := p.GetRightBreakPoint(point.Y)
+			DrawParabola(t.dc, p.Point.X, p.Point.Y, point.Y, math.Max(bpl, 0), math.Min(bpr, float64(t.dc.Width())))
+			t.dc.DrawString(fmt.Sprintf("%dL", i), bpl-10, p.Point.Y+10*float64(i))
+			t.dc.DrawString(fmt.Sprintf("%dR", i), bpr+10, p.Point.Y+10*float64(i))
+			t.dc.Stroke()
+			i++
+		}
+	}
+
+	t.dc.SetHexColor("00f")
+	for i, v := range t.Vertices {
+		t.dc.DrawPoint(v.X, v.Y, 3)
+		t.dc.DrawString(fmt.Sprintf("%d", i), v.X, v.Y+30)
+		t.dc.Stroke()
+	}
+
+	t.dc.SetHexColor("0f0")
+	t.dc.DrawLine(0, point.Y, 1000, point.Y)
+	t.dc.Stroke()
+
+	t.savePNG()
+}
+
+func (t *Triangulator) savePNG() {
+	err := t.dc.SavePNG(fmt.Sprintf("img/fortune%03d.png", t.drawingCount))
+	if err != nil {
+		fmt.Println(err)
+	}
+	t.drawingCount++
+	t.dc.SetHexColor("fff")
+	t.dc.Clear()
+}
+
+func print(i ...interface{}) {
+	fmt.Println(i...)
 }

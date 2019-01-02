@@ -1,5 +1,3 @@
-github.com/awalterschulze/gographviz v0.0.0-20181013152038-b2885df04310 h1:t+qxRrRtwNiUYA+Xh2jSXhoG2grnMCMKX4Fg6lx9X1U=
-github.com/awalterschulze/gographviz v0.0.0-20181013152038-b2885df04310/go.mod h1:GEV5wmg4YquNw7v1kkyoX9etIk8yVmXj+AkDHuuETHs=
 github.com/fogleman/gg v1.1.0 h1:wVTfU9tB/LDr2eI5HILatkzBQLD3yl0KtPFt8KlcSIY=
 github.com/fogleman/gg v1.1.0/go.mod h1:R/bRT+9gY/C5z7JzPU0zXsXHKM4/ayA+zqcVNZzPa1k=
 github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 h1:DACJavvAHhabrF08vX0COfcOBJRhZ8lUbR+ZWIs0Y5g=

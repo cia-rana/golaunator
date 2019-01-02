@@ -7,13 +7,12 @@ import (
 )
 
 func main() {
-	vertices := []*iia.Vertex{
-		{X: 0, Y: 0},
-		{X: 100, Y: 500},
-		{X: 500, Y: 0},
-		{X: 125, Y: 125},
+	verticesForIaa := make([]*iia.Vertex, 0, len(vertices))
+	for _, v := range vertices {
+		verticesForIaa = append(verticesForIaa, &iia.Vertex{X: v[0], Y: v[1]})
 	}
-	t := iia.NewTriangulator(vertices)
+
+	t := iia.NewTriangulator(verticesForIaa)
 	t.Triangulate()
 
 	if true {
@@ -24,9 +23,9 @@ func main() {
 		g.SetDir(true)
 		g.AddAttr(gName, "splines", "line")
 
-		vertices = append(vertices, iia.ComputeCoverTriangleVertices(vertices)...)
+		//verticesForIaa = append(verticesForIaa, iia.ComputeCoverTriangleVertices(verticesForIaa)...)
 
-		for i, v := range vertices {
+		for i, v := range verticesForIaa {
 			g.AddNode(
 				gName,
 				fmt.Sprint(i),
