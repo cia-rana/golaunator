@@ -11,7 +11,7 @@ type Triangulator struct {
 	Vertices []*Vertex
 	Edges    []*Edge
 
-	parRoot *Parabola // Root of parabola tree
+	parabolaTree *ParabolaTree
 
 	eventQueue *EventQueue
 
@@ -22,9 +22,10 @@ type Triangulator struct {
 
 func NewTriangulator(vertices []*Vertex) *Triangulator {
 	triangulator := &Triangulator{
-		Vertices:   vertices,
-		Edges:      make([]*Edge, 0, 2*len(vertices)-5),
-		eventQueue: NewEventQueue(),
+		Vertices:     vertices,
+		Edges:        make([]*Edge, 0, 2*len(vertices)-5),
+		parabolaTree: NewParabolaTree(),
+		eventQueue:   NewEventQueue(),
 	}
 
 	for i, _ := range vertices {
@@ -62,19 +63,19 @@ func (t *Triangulator) Triangulate() error {
 func (t *Triangulator) insertParabola(event *Event) {
 	point := event.Point
 
-	if t.parRoot == nil {
-		t.parRoot = NewParabolaWithPoint(point)
+	if t.parabolaTree.GetRoot() == nil {
+		t.parabolaTree.SetRoot(NewParabolaWithPoint(point))
 		return
 	}
 
-	if t.parRoot.IsLeaf() && event.Point.Y-t.parRoot.Point.Y < math.SmallestNonzeroFloat64 {
-		rp := t.parRoot.Point
-		t.parRoot.SetNext(NewParabolaWithPoint(point))
+	if parRoot := t.parabolaTree.GetRoot(); parRoot.IsLeaf() && event.Point.Y-parRoot.Point.Y < math.SmallestNonzeroFloat64 {
+		rp := parRoot.Point
+		parRoot.SetNext(NewParabolaWithPoint(point))
 		t.Edges = append(t.Edges, NewEdge(Vector2Vertex(point), Vector2Vertex(rp)))
 		return
 	}
 
-	par := t.parRoot.GetParabolaByX(point)
+	par := t.parabolaTree.GetParabolaByX(point)
 
 	t.Edges = append(t.Edges, NewEdge(Vector2Vertex(par.Point), Vector2Vertex(point)))
 
@@ -86,9 +87,7 @@ func (t *Triangulator) insertParabola(event *Event) {
 	parB.SetPrev(parA)
 	parB.SetNext(parC)
 
-	if parRootIsChanged, parRootCandidate := par.Delete(); parRootIsChanged {
-		t.parRoot = parRootCandidate
-	}
+	t.parabolaTree.Delete(par)
 
 	if t.enableDraw {
 		t.draw(point)
@@ -101,7 +100,7 @@ func (t *Triangulator) insertParabola(event *Event) {
 func (t *Triangulator) removeParabola(event *Event) {
 	parB := event.Parabola
 
-	if !t.parRoot.IsExist(parB) {
+	if !t.parabolaTree.IsExist(parB) {
 		return
 	}
 
@@ -110,9 +109,7 @@ func (t *Triangulator) removeParabola(event *Event) {
 
 	t.Edges = append(t.Edges, NewEdge(Vector2Vertex(parA.Point), Vector2Vertex(parC.Point)))
 
-	if parRootIsChanged, parRootCandidate := parB.Delete(); parRootIsChanged {
-		t.parRoot = parRootCandidate
-	}
+	t.parabolaTree.Delete(parB)
 
 	if t.enableDraw {
 		t.draw(event.Point)
@@ -190,7 +187,7 @@ func (t *Triangulator) draw(point *Vector) {
 	t.dc.DrawString(fmt.Sprintf("%d", t.drawingCount), 20, 20)
 	{
 		var i int
-		for p := t.parRoot.GetMin(); p != nil; p = p.GetNext() {
+		for p := t.parabolaTree.GetMin(); p != nil; p = p.GetNext() {
 			t.dc.SetHexColor("f00")
 			bpl := p.GetLeftBreakPoint(point.Y)
 			bpr := p.GetRightBreakPoint(point.Y)

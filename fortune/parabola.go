@@ -110,82 +110,8 @@ func (p *Parabola) GetMax() *Parabola {
 	return p
 }
 
-func (p *Parabola) Delete() (bool, *Parabola) {
-	defer func() {
-		p = nil
-	}()
-
-	if p.l == nil && p.r == nil {
-		return p.RecognizeParent(nil)
-	}
-	if p.l == nil {
-		p.r.p = p.p
-		return p.RecognizeParent(p.r)
-	}
-	if p.r == nil {
-		p.l.p = p.p
-		return p.RecognizeParent(p.l)
-	}
-	if p.r.l == nil {
-		p.r.p = p.p
-		p.r.l = p.l
-		p.l.p = p.r
-		return p.RecognizeParent(p.r)
-	}
-
-	pRMin := p.r.GetMin()
-
-	if pRMin.r != nil {
-		pRMin.r.p = pRMin.p
-	}
-
-	pRMin.p.l = pRMin.r
-	p.l.p = pRMin
-	p.r.p = pRMin
-	pRMin.l = p.l
-	pRMin.r = p.r
-	pRMin.p = p.p
-
-	return p.RecognizeParent(pRMin)
-}
-
-func (p *Parabola) RecognizeParent(q *Parabola) (bool, *Parabola) {
-	if p.p == nil {
-		return true, q
-	}
-
-	if p.p.l == p {
-		p.p.l = q
-	} else {
-		p.p.r = q
-	}
-
-	return false, nil
-}
-
 func (p *Parabola) IsLeaf() bool {
 	return p.l == nil && p.r == nil
-}
-
-func (p *Parabola) GetParabolaByX(point *Vector) *Parabola {
-	par := p
-	for !par.IsLeaf() {
-		if point.X < par.GetLeftBreakPoint(point.Y) {
-			if par.l == nil {
-				break
-			}
-			par = par.l
-		} else if par.GetRightBreakPoint(point.Y) < point.X {
-			if par.r == nil {
-				break
-			}
-			par = par.r
-		} else {
-			break
-		}
-	}
-
-	return par
 }
 
 func (p *Parabola) GetLeftBreakPoint(ly float64) float64 {
@@ -235,9 +161,110 @@ func (p *Parabola) Len() int {
 	return 1 + p.l.Len() + p.r.Len()
 }
 
-func (p *Parabola) IsExist(q *Parabola) bool {
+type ParabolaTree struct {
+	parRoot *Parabola
+}
+
+func NewParabolaTree() *ParabolaTree {
+	return &ParabolaTree{}
+}
+
+func (pt *ParabolaTree) GetRoot() *Parabola {
+	return pt.parRoot
+}
+
+func (pt *ParabolaTree) SetRoot(p *Parabola) {
+	pt.parRoot = p
+}
+
+func (pt *ParabolaTree) GetParabolaByX(point *Vector) *Parabola {
+	par := pt.parRoot
+	for !par.IsLeaf() {
+		if point.X < par.GetLeftBreakPoint(point.Y) {
+			if par.l == nil {
+				break
+			}
+			par = par.l
+		} else if par.GetRightBreakPoint(point.Y) < point.X {
+			if par.r == nil {
+				break
+			}
+			par = par.r
+		} else {
+			break
+		}
+	}
+
+	return par
+}
+
+func (pt *ParabolaTree) Delete(p *Parabola) {
+	if p.l == nil && p.r == nil {
+		pt.RecognizeParent(p, nil)
+		return
+	}
+	if p.l == nil {
+		p.r.p = p.p
+		pt.RecognizeParent(p, p.r)
+		return
+	}
+	if p.r == nil {
+		p.l.p = p.p
+		pt.RecognizeParent(p, p.l)
+		return
+	}
+	if p.r.l == nil {
+		p.r.p = p.p
+		p.r.l = p.l
+		p.l.p = p.r
+		pt.RecognizeParent(p, p.r)
+		return
+	}
+
+	pRMin := p.r.GetMin()
+
+	if pRMin.r != nil {
+		pRMin.r.p = pRMin.p
+	}
+
+	pRMin.p.l = pRMin.r
+	p.l.p = pRMin
+	p.r.p = pRMin
+	pRMin.l = p.l
+	pRMin.r = p.r
+	pRMin.p = p.p
+
+	pt.RecognizeParent(p, pRMin)
+}
+
+func (pt *ParabolaTree) RecognizeParent(p, q *Parabola) {
+	if p.p == nil {
+		pt.parRoot = q
+		return
+	}
+
+	if p.p.l == p {
+		p.p.l = q
+	} else {
+		p.p.r = q
+	}
+}
+
+func (pt *ParabolaTree) IsExist(q *Parabola) bool {
+	return pt.isExist(pt.parRoot, q)
+}
+
+func (pt *ParabolaTree) isExist(p, q *Parabola) bool {
 	if p == nil || q == nil {
 		return false
 	}
-	return p == q || p.l.IsExist(q) || p.r.IsExist(q)
+	return p == q || pt.isExist(p.l, q) || pt.isExist(p.r, q)
+}
+
+func (pt *ParabolaTree) GetMin() *Parabola {
+	return pt.parRoot.GetMin()
+}
+
+func (pt *ParabolaTree) GetMax() *Parabola {
+	return pt.parRoot.GetMax()
 }
